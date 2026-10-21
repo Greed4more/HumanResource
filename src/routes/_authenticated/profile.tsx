@@ -55,7 +55,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
 type PhotoItem = { key: string; url: string; path?: string; file?: File };
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
 const MAX_ID_BYTES = 10 * 1024 * 1024;
 
 function extensionFor(type: string) {
@@ -195,7 +195,7 @@ function ProfilePage() {
         continue;
       }
       if (file.size > MAX_PHOTO_BYTES) {
-        toast.error(`${file.name} is larger than 5 MB.`);
+        toast.error(`${file.name} is larger than 15 MB.`);
         continue;
       }
       chosen.push(file);
@@ -434,7 +434,7 @@ function ProfilePage() {
             </legend>
             <p className="mt-1 text-xs text-muted-foreground">
               Add up to {MAX_PHOTOS}. The first photo is your main one — use the arrows to change
-              the order. JPEG, PNG or WebP, up to 5 MB each.
+              the order. JPEG, PNG or WebP, up to 15 MB each.
             </p>
             <div className="mt-3 grid grid-cols-3 gap-3">
               {photos.map((p, i) => (
