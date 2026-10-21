@@ -1,0 +1,10 @@
+{
+  "name": "AFTERCLASS — Some connections happen after class.",
+  "short_name": "AFTERCLASS",
+  "description": "An independent, verified community for Adamas students.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0C",
+  "theme_color": "#0A0A0C",
+  "icons": [{ "src": "/favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+}
