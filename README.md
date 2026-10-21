@@ -116,6 +116,32 @@ Open <http://localhost:3000>.
 
 ## Deploying
 
+### Vercel
+
+Vercel detects TanStack Start + Nitro automatically (the `vercel.json` in this
+repo also pins the framework preset). Import the GitHub repo, then add these
+environment variables for Production, Preview, and Development:
+
+| Variable                 | Value                                  |
+| ------------------------ | -------------------------------------- |
+| `VITE_SUPABASE_URL`      | `https://YOUR_PROJECT_REF.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Supabase publishable/anon key          |
+| `VITE_CONTACT_EMAIL`     | Optional public contact address        |
+
+Leave the build command as `npm run build` and deploy. `NITRO_PRESET=vercel` is
+optional because Nitro detects Vercel during the build.
+
+After the first deploy, add the Vercel URL to Supabase Auth:
+
+- **Site URL**: `https://your-project.vercel.app`
+- **Redirect URLs**: `https://your-project.vercel.app/**` (and your custom domain
+  if you add one)
+
+Redeploy after changing environment variables; Vercel bakes `VITE_*` values into
+the client at build time.
+
+### Other hosts
+
 The build produces a Nitro server in `.output/`. The default preset is
 `node-server`:
 

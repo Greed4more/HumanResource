@@ -30,6 +30,9 @@ coverage
 test-results
 playwright-report
 
+# Vercel
+.vercel
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
