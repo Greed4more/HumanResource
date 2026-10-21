@@ -166,6 +166,8 @@ export function IncomingSuperLikes({ userId }: { userId: string }) {
                     src={like.photo}
                     alt={like.profile.display_name ?? ""}
                     className="size-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                 )}
               </div>

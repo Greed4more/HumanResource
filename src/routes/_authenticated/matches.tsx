@@ -109,6 +109,8 @@ function Matches() {
                   src={m.photo}
                   alt={m.display_name ?? ""}
                   className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                  loading="lazy"
+                  decoding="async"
                 />
               )}
             </div>

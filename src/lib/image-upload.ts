@@ -131,9 +131,9 @@ export async function prepareImageForUpload(
 }
 
 export const PHOTO_UPLOAD_OPTIONS: UploadImageOptions = {
-  maxDimension: 2000,
-  maxBytes: 1_500_000,
-  quality: 0.88,
+  maxDimension: 1280,
+  maxBytes: 750_000,
+  quality: 0.85,
 };
 
 export const ID_UPLOAD_OPTIONS: UploadImageOptions = {

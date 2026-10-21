@@ -36,16 +36,30 @@ function Discover() {
     queryFn: async () => {
       const { data: profiles, error } = await supabase.rpc("discover_profiles", { _limit: 50 });
       if (error) throw error;
-      const urls = await signedUrls(
-        "photos",
-        (profiles ?? []).flatMap((p) => p.photo_paths ?? []),
-      );
       return (profiles ?? []).map((p) => ({
         ...p,
-        photos: (p.photo_paths ?? []).flatMap((path) => (urls[path] ? [urls[path]] : [])),
         prompts: readPrompts(p.prompts),
       }));
     },
+  });
+
+  const current = data?.[0];
+
+  async function photoUrls(paths: string[]) {
+    const urls = await signedUrls("photos", paths);
+    return paths.flatMap((path) => (urls[path] ? [urls[path]] : []));
+  }
+
+  const {
+    data: currentPhotos,
+    isLoading: photosLoading,
+    isError: photosError,
+    refetch: refetchPhotos,
+  } = useQuery({
+    queryKey: ["discover-photos", current?.id],
+    enabled: !!current,
+    staleTime: 50 * 60 * 1000,
+    queryFn: () => photoUrls(current?.photo_paths ?? []),
   });
 
   function removeProfile(target: string) {
@@ -84,8 +98,6 @@ function Discover() {
     }
   }
 
-  const current = data?.[0];
-
   return (
     <main className="mx-auto max-w-7xl px-5 py-14 md:px-8 md:py-20">
       <PageHeading
@@ -116,11 +128,22 @@ function Discover() {
               <Link to="/matches">See matches</Link>
             </Button>
           </div>
+        ) : photosError ? (
+          <div className="border border-border bg-card p-8 text-center">
+            <p className="text-sm text-muted-foreground">Could not load this photo.</p>
+            <Button variant="outline" className="mt-4" onClick={() => refetchPhotos()}>
+              Try again
+            </Button>
+          </div>
+        ) : photosLoading || !currentPhotos ? (
+          <div className="border border-border bg-card p-8 text-center">
+            <p className="text-sm text-muted-foreground">Loading photo…</p>
+          </div>
         ) : (
           <>
             <ProfileCard
               key={current.id}
-              photos={current.photos}
+              photos={currentPhotos}
               name={current.display_name}
               birthdate={current.birthdate}
               course={current.course}

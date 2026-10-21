@@ -489,7 +489,13 @@ function ProfilePage() {
                   key={p.key}
                   className="relative aspect-[4/5] overflow-hidden border border-border bg-secondary"
                 >
-                  <img src={p.url} alt={`Your photo ${i + 1}`} className="size-full object-cover" />
+                  <img
+                    src={p.url}
+                    alt={`Your photo ${i + 1}`}
+                    className="size-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
                   {i === 0 && (
                     <span className="absolute left-1.5 top-1.5 bg-primary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
                       Main

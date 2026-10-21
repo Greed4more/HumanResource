@@ -217,7 +217,15 @@ function Chat() {
           className="flex min-w-0 flex-1 items-center gap-4"
         >
           <div className="size-12 shrink-0 overflow-hidden bg-secondary">
-            {info.photo && <img src={info.photo} alt="" className="size-full object-cover" />}
+            {info.photo && (
+              <img
+                src={info.photo}
+                alt=""
+                className="size-full object-cover"
+                loading="eager"
+                decoding="async"
+              />
+            )}
           </div>
           <h1 className="truncate font-display text-xl font-semibold text-foreground hover:underline">
             {info.name}

@@ -106,6 +106,8 @@ function PhotoCarousel({ photos, name }: { photos: string[]; name: string }) {
         src={photos[index]}
         alt={`${name} — photo ${index + 1} of ${count}`}
         className="size-full object-cover"
+        loading="eager"
+        decoding="async"
         draggable={false}
       />
       {count > 1 && (
