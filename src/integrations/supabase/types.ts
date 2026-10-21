@@ -88,6 +88,7 @@ export type Database = {
           display_name: string | null;
           email: string | null;
           gender: string | null;
+          hidden_at: string | null;
           id: string;
           interested_in: string | null;
           interests: string[];
@@ -106,6 +107,7 @@ export type Database = {
           display_name?: string | null;
           email?: string | null;
           gender?: string | null;
+          hidden_at?: string | null;
           id: string;
           interested_in?: string | null;
           interests?: string[];
@@ -124,6 +126,7 @@ export type Database = {
           display_name?: string | null;
           email?: string | null;
           gender?: string | null;
+          hidden_at?: string | null;
           id?: string;
           interested_in?: string | null;
           interests?: string[];
@@ -264,6 +267,19 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      admin_hidden_profiles: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          display_name: string | null;
+          email: string | null;
+          hidden_at: string;
+          user_id: string;
+        }[];
+      };
+      admin_set_profile_hidden: {
+        Args: { _user_id: string; _hidden: boolean };
+        Returns: undefined;
+      };
       admin_open_reports: {
         Args: Record<PropertyKey, never>;
         Returns: {

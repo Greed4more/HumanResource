@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { ProfileCard } from "@/components/afterclass/profile-card";
@@ -28,8 +28,10 @@ export const Route = createFileRoute("/_authenticated/people/$userId")({
 function PersonPage() {
   const { userId } = Route.useParams();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { data: me } = useQuery(meQuery);
   const uid = me?.user.id;
+  const isAdmin = !!me?.isAdmin;
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["person", userId],
@@ -84,6 +86,25 @@ function PersonPage() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not block this person");
     }
+  }
+
+  async function toggleHidden() {
+    if (!data) return;
+    const hide = !data.profile.hidden_at;
+    const { error } = await supabase.rpc("admin_set_profile_hidden", {
+      _user_id: userId,
+      _hidden: hide,
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(hide ? "Profile hidden from other users" : "Profile visible to other users");
+    qc.invalidateQueries({ queryKey: ["person", userId] });
+    qc.invalidateQueries({ queryKey: ["admin-hidden"] });
+    qc.invalidateQueries({ queryKey: ["discover"] });
+    qc.invalidateQueries({ queryKey: ["matches"] });
+    qc.invalidateQueries({ queryKey: ["incoming-super-likes"] });
   }
 
   if (isLoading)
@@ -182,6 +203,26 @@ function PersonPage() {
           </Button>
         )}
       </div>
+
+      {isAdmin && (
+        <div className="mt-6 border border-warning/40 bg-warning/5 p-4">
+          <p className="text-sm font-semibold text-foreground">Admin: profile visibility</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {profile.hidden_at
+              ? "Hidden from every non-admin user. Unhide when testing is done."
+              : "Visible to approved students. Hide this test profile to remove it from Discover, matches, and super likes."}
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant={profile.hidden_at ? "outline" : "destructive"}
+            className="mt-3"
+            onClick={toggleHidden}
+          >
+            {profile.hidden_at ? "Unhide profile" : "Hide profile from users"}
+          </Button>
+        </div>
+      )}
     </main>
   );
 }

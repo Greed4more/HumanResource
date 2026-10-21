@@ -407,6 +407,25 @@ function ProfilePage() {
     }
   }
 
+  async function toggleHidden() {
+    if (!me?.isAdmin || !me.profile) return;
+    const hide = !me.profile.hidden_at;
+    const { error } = await supabase.rpc("admin_set_profile_hidden", {
+      _user_id: me.user.id,
+      _hidden: hide,
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(hide ? "Profile hidden from other users" : "Profile visible to other users");
+    qc.invalidateQueries({ queryKey: ["me"] });
+    qc.invalidateQueries({ queryKey: ["admin-hidden"] });
+    qc.invalidateQueries({ queryKey: ["discover"] });
+    qc.invalidateQueries({ queryKey: ["matches"] });
+    qc.invalidateQueries({ queryKey: ["incoming-super-likes"] });
+  }
+
   const verification = me.verification;
   const status = !verification
     ? "Not submitted"
@@ -469,6 +488,25 @@ function ProfilePage() {
           </DialogContent>
         </Dialog>
       </div>
+      {me.isAdmin && (
+        <div className="mt-6 border border-warning/40 bg-warning/5 p-4">
+          <p className="text-sm font-semibold text-foreground">Admin: profile visibility</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {me.profile?.hidden_at
+              ? "Your profile is hidden from every non-admin user. Unhide when testing is done."
+              : "Your profile is visible to approved students. Hide it if this account is only for testing."}
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant={me.profile?.hidden_at ? "outline" : "destructive"}
+            className="mt-3"
+            onClick={toggleHidden}
+          >
+            {me.profile?.hidden_at ? "Unhide my profile" : "Hide my profile from users"}
+          </Button>
+        </div>
+      )}
       <div className="mt-10 grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px]">
         <form onSubmit={save} className="grid content-start gap-5 md:grid-cols-2">
           <fieldset className="md:col-span-2">

@@ -79,6 +79,21 @@ function Admin() {
     },
   });
 
+  const {
+    data: hiddenProfiles,
+    isLoading: hiddenLoading,
+    isError: hiddenError,
+    refetch: refetchHidden,
+  } = useQuery({
+    queryKey: ["admin-hidden"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_hidden_profiles");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   async function review(userId: string, status: "approved" | "rejected") {
     const note =
       status === "rejected" ? (prompt("Reason shown to the student (optional)") ?? "") : null;
@@ -118,6 +133,23 @@ function Admin() {
     qc.invalidateQueries({ queryKey: ["admin-reports"] });
     qc.invalidateQueries({ queryKey: ["admin-verifications"] });
     qc.invalidateQueries({ queryKey: ["admin-suspended"] });
+  }
+
+  async function setHidden(userId: string, hidden: boolean) {
+    const { error } = await supabase.rpc("admin_set_profile_hidden", {
+      _user_id: userId,
+      _hidden: hidden,
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(hidden ? "Profile hidden from users" : "Profile visible to users");
+    qc.invalidateQueries({ queryKey: ["admin-hidden"] });
+    qc.invalidateQueries({ queryKey: ["admin-verifications"] });
+    qc.invalidateQueries({ queryKey: ["discover"] });
+    qc.invalidateQueries({ queryKey: ["matches"] });
+    qc.invalidateQueries({ queryKey: ["incoming-super-likes"] });
   }
 
   if (meLoading)
@@ -278,6 +310,47 @@ function Admin() {
             </div>
             <Button size="sm" variant="outline" onClick={() => setSuspended(u.user_id, false)}>
               Reactivate
+            </Button>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="mt-12 font-display text-xl font-semibold text-foreground">
+        Hidden test profiles ({hiddenProfiles?.length ?? 0})
+      </h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Hidden profiles still work for their owner and admins, but are invisible to every other
+        student.
+      </p>
+      {hiddenLoading && (
+        <p className="mt-3 text-sm text-muted-foreground">Loading hidden profiles…</p>
+      )}
+      {hiddenError && (
+        <div className="mt-3">
+          <p className="text-sm text-muted-foreground">Couldn’t load hidden profiles.</p>
+          <Button variant="outline" size="sm" className="mt-2" onClick={() => refetchHidden()}>
+            Try again
+          </Button>
+        </div>
+      )}
+      {!hiddenLoading && !hiddenError && hiddenProfiles?.length === 0 && (
+        <p className="mt-3 text-sm text-muted-foreground">No hidden profiles.</p>
+      )}
+      <div className="mt-4 space-y-3">
+        {hiddenProfiles?.map((u) => (
+          <div
+            key={u.user_id}
+            className="flex items-center justify-between gap-4 border border-border p-4"
+          >
+            <div>
+              <p className="text-sm font-semibold text-foreground">{u.display_name ?? "Student"}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {u.email} · hidden{" "}
+                {u.hidden_at ? new Date(u.hidden_at).toLocaleString() : "recently"}
+              </p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setHidden(u.user_id, false)}>
+              Unhide
             </Button>
           </div>
         ))}

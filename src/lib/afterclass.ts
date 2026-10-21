@@ -7,7 +7,7 @@ export const STUDENT_DOMAIN = "@stu.adamasuniversity.ac.in";
 export const matchesQueryKey = ["matches"];
 
 export const PROFILE_COLUMNS =
-  "id, display_name, birthdate, gender, interested_in, course, year, bio, interests, photo_path, photo_paths, prompts, onboarded, created_at";
+  "id, display_name, birthdate, gender, interested_in, course, year, bio, interests, photo_path, photo_paths, prompts, onboarded, hidden_at, created_at";
 
 export function isStudentEmail(email: string) {
   return email.trim().toLowerCase().endsWith(STUDENT_DOMAIN);

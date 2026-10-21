@@ -174,8 +174,8 @@ Supabase remains the database, auth, and file storage provider.
 - `profiles.email` is not granted to `authenticated`. Moderators read emails
   through admin-only RPCs.
 - Photos and ID cards are private buckets. Reads use one-hour signed URLs.
-- Only admins can approve/reject IDs, read reports, suspend accounts, or see ID
-  cards.
+- Only admins can approve/reject IDs, read reports, suspend accounts, hide test
+  profiles, or see ID cards.
 - Basic DB rate limits cover swipes, messages, and reports.
 - A super like includes a short message, counts as a like, and is limited to one
   per sender per day (IST) by a database constraint and trigger.
