@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.afterclassadamas.twa",
+        "sha256_cert_fingerprints": ["48:87:33:A3:EA:D5:88:3A:0E:2F:C0:3C:3E:25:8B:62:7D:E3:5D:E2:0E:2A:44:48:E0:15:9C:B4:97:44:44:B9"]
+      }
+    }]

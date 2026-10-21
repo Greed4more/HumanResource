@@ -28,6 +28,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { meQuery, signedUrls } from "@/lib/afterclass";
 import {
+  errorMessage,
+  ID_UPLOAD_OPTIONS,
+  PHOTO_UPLOAD_OPTIONS,
+  prepareImageForUpload,
+} from "@/lib/image-upload";
+import {
   cleanPrompts,
   MAX_ANSWER,
   MAX_PHOTOS,
@@ -62,6 +68,16 @@ function extensionFor(type: string) {
   if (type === "image/png") return "png";
   if (type === "image/webp") return "webp";
   return "jpg";
+}
+
+async function safeRemove(bucket: string, paths: string[]) {
+  if (!paths.length) return;
+  try {
+    const { error } = await supabase.storage.from(bucket).remove(paths);
+    if (error) console.error(`Could not remove from ${bucket}`, error);
+  } catch (error) {
+    console.error(`Could not remove from ${bucket}`, error);
+  }
 }
 
 function fillSlots(saved: Prompt[]): Prompt[] {
@@ -280,32 +296,49 @@ function ProfilePage() {
         }
         const file = item.file;
         if (!file) continue;
-        const path = `${me.user.id}/photo-${Date.now()}-${i}.${extensionFor(file.type)}`;
-        const { error } = await supabase.storage
-          .from("photos")
-          .upload(path, file, { contentType: file.type });
-        if (error) throw error;
+        const prepared = await prepareImageForUpload(file, PHOTO_UPLOAD_OPTIONS).catch(() => ({
+          file,
+          width: 0,
+          height: 0,
+        }));
+        const path = `${me.user.id}/photo-${Date.now()}-${i}.${extensionFor(prepared.file.type)}`;
+        let upload;
+        try {
+          upload = await supabase.storage
+            .from("photos")
+            .upload(path, prepared.file, { contentType: prepared.file.type });
+        } catch {
+          throw new Error(`Could not upload photo ${i + 1}. Check your connection and try again.`);
+        }
+        if (upload.error) {
+          throw new Error(`Could not upload photo ${i + 1}: ${upload.error.message}`);
+        }
         uploadedPhotos.push(path);
         photo_paths.push(path);
       }
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          display_name: form.display_name.trim(),
-          birthdate: form.birthdate,
-          gender: form.gender,
-          interested_in: form.interested_in,
-          course: form.course.trim(),
-          year: form.year.trim(),
-          bio: form.bio.trim(),
-          interests: parseInterests(form.interests),
-          photo_paths,
-          prompts,
-          onboarded: true,
-        })
-        .eq("id", me.user.id);
-      if (error) throw error;
+      let profileUpdate;
+      try {
+        profileUpdate = await supabase
+          .from("profiles")
+          .update({
+            display_name: form.display_name.trim(),
+            birthdate: form.birthdate,
+            gender: form.gender,
+            interested_in: form.interested_in,
+            course: form.course.trim(),
+            year: form.year.trim(),
+            bio: form.bio.trim(),
+            interests: parseInterests(form.interests),
+            photo_paths,
+            prompts,
+            onboarded: true,
+          })
+          .eq("id", me.user.id);
+      } catch {
+        throw new Error("Could not save your profile. Check your connection and try again.");
+      }
+      if (profileUpdate.error) throw new Error(profileUpdate.error.message);
       profileSaved = true;
 
       // New uploads now have a storage path; keep them from uploading again if
@@ -318,24 +351,39 @@ function ProfilePage() {
       );
 
       const removed = (me.profile?.photo_paths ?? []).filter((p) => !photo_paths.includes(p));
-      if (removed.length) {
-        const { error: removeError } = await supabase.storage.from("photos").remove(removed);
-        if (removeError) console.error("Could not remove old photos", removeError);
-      }
+      await safeRemove("photos", removed);
 
       if (idFile) {
-        const path = `${me.user.id}/id-${Date.now()}.${extensionFor(idFile.type)}`;
-        const upload = await supabase.storage
-          .from("id-cards")
-          .upload(path, idFile, { contentType: idFile.type });
-        if (upload.error) throw upload.error;
+        const preparedId = await prepareImageForUpload(idFile, ID_UPLOAD_OPTIONS).catch(() => ({
+          file: idFile,
+          width: 0,
+          height: 0,
+        }));
+        const path = `${me.user.id}/id-${Date.now()}.${extensionFor(preparedId.file.type)}`;
+        let upload;
+        try {
+          upload = await supabase.storage
+            .from("id-cards")
+            .upload(path, preparedId.file, { contentType: preparedId.file.type });
+        } catch {
+          throw new Error("Could not upload your college ID. Check your connection and try again.");
+        }
+        if (upload.error) {
+          throw new Error(`Could not upload your college ID: ${upload.error.message}`);
+        }
 
-        const { error: verificationError } = await supabase
-          .from("verifications")
-          .upsert({ user_id: me.user.id, id_card_path: path });
-        if (verificationError) {
-          await supabase.storage.from("id-cards").remove([path]);
-          throw verificationError;
+        let verification;
+        try {
+          verification = await supabase
+            .from("verifications")
+            .upsert({ user_id: me.user.id, id_card_path: path });
+        } catch {
+          await safeRemove("id-cards", [path]);
+          throw new Error("Could not save your ID check. Check your connection and try again.");
+        }
+        if (verification.error) {
+          await safeRemove("id-cards", [path]);
+          throw new Error(verification.error.message);
         }
 
         const oldPath = me.verification?.id_card_path;
@@ -352,10 +400,8 @@ function ProfilePage() {
       qc.invalidateQueries({ queryKey: ["me"] });
       qc.invalidateQueries({ queryKey: ["person", me.user.id] });
     } catch (error) {
-      if (!profileSaved && uploadedPhotos.length) {
-        await supabase.storage.from("photos").remove(uploadedPhotos);
-      }
-      toast.error(error instanceof Error ? error.message : "Could not save");
+      if (!profileSaved) await safeRemove("photos", uploadedPhotos);
+      toast.error(errorMessage(error, "Could not save"));
     } finally {
       setBusy(false);
     }
@@ -434,7 +480,8 @@ function ProfilePage() {
             </legend>
             <p className="mt-1 text-xs text-muted-foreground">
               Add up to {MAX_PHOTOS}. The first photo is your main one — use the arrows to change
-              the order. JPEG, PNG or WebP, up to 15 MB each.
+              the order. JPEG, PNG or WebP, up to 15 MB each — large photos are resized before
+              upload.
             </p>
             <div className="mt-3 grid grid-cols-3 gap-3">
               {photos.map((p, i) => (
